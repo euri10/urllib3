@@ -4,7 +4,6 @@ import socket
 
 from ..connection import HTTPConnection
 from ..connectionpool import HTTPConnectionPool
-from ..packages.six.moves.urllib.parse import unquote_plus
 from ..poolmanager import PoolManager
 from ..util.connection import _set_socket_options
 
@@ -90,8 +89,7 @@ class UnixHostHTTPConnectionPool(UnixHTTPConnectionPool):
 
     # port exists for API compatibility, but is ignored
     def __init__(self, host, port=None, **conn_kw):
-        socket_path = unquote_plus(host)
-        super(UnixHostHTTPConnectionPool, self).__init__(socket_path, **conn_kw)
+        super(UnixHostHTTPConnectionPool, self).__init__(host, **conn_kw)
 
 
 class UnixHTTPPoolManager(PoolManager):

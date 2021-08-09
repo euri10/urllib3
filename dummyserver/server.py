@@ -217,8 +217,8 @@ if __name__ == "__main__":
     # For debugging dummyserver itself - python -m dummyserver.server
     from .handlers import TestingApp
 
-    # host = '127.0.0.1'
-    host = '/tmp/dummyserver.sock'
+    host = '127.0.0.1'
+    # host = '/tmp/dummyserver.sock'
 
     io_loop = tornado.ioloop.IOLoop.current()
     app = tornado.web.Application([(r".*", TestingApp)])
@@ -228,8 +228,7 @@ if __name__ == "__main__":
     if port:
         print("Listening on http://{host}:{port}".format(host=host, port=port))
     else:
-        print("Listening on unix@{host}".format(host=host))
-    print(f"Listening on http://{host}:{port}")
+        print("Listening on http+unix@{host}".format(host=host))
 
 
 def encrypt_key_pem(private_key_pem: trustme.Blob, password: bytes) -> trustme.Blob:
