@@ -227,8 +227,6 @@ class SocketProxyDummyServer(SocketDummyServerTestCase):
     socket.
     """
 
-    host = "localhost"
-
     def __init__(self, destination_server_host, destination_server_port):
         self.destination_server_host = destination_server_host
         self.destination_server_port = destination_server_port
@@ -298,10 +296,6 @@ class TlsInTlsTestCase(SocketDummyServerTestCase):
     to the destination server. First TLS layer terminates at the proxy, second
     TLS layer terminates at the destination server.
     """
-
-    host_fixture = [
-        ("test_localhost", ("host", "localhost")),
-    ]
 
     @classmethod
     def setup_class(cls):
