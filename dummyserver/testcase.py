@@ -35,10 +35,21 @@ class SocketDummyServerTestCase:
     """
 
     scheme = "http"
-    host = "localhost"
+    # host = "localhost"
 
     server_thread: ClassVar[SocketServerThread]
     port: ClassVar[int]
+
+    host_fixture = [
+        ("test_localhost", ("host", "localhost")),
+        # ("test_uds", ("host", "/tmp/dummyserver.sock"))
+    ]
+
+    @pytest.fixture(autouse=True)
+    def auto_injector_fixture(self, request):
+        if hasattr(self, 'host_fixture'):
+            for (scenario, (fixture_name, fixture_value)) in self.host_fixture:
+                setattr(request.cls, fixture_name, fixture_value)
 
     @classmethod
     def _start_server(cls, socket_handler: Callable[[socket.socket], None]) -> None:
