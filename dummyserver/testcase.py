@@ -1,9 +1,10 @@
 import socket
 import threading
 from contextlib import contextmanager
-from typing import Any, Callable, ClassVar, Generator, Iterable, Optional
+from typing import Any, Callable, ClassVar, Generator, Iterable, List, Optional, Tuple
 
 import pytest
+from _pytest.fixtures import SubRequest
 from tornado import httpserver, ioloop, web
 
 from dummyserver.handlers import TestingApp
@@ -28,6 +29,16 @@ def consume_socket(sock: socket.socket, chunks: int = 65536) -> bytearray:
     return consumed
 
 
+class HostInject:
+    host_fixture: List[Tuple[str, Tuple[str, str]]] = []
+
+    @pytest.fixture(autouse=True)
+    def auto_injector_fixture(self, request: SubRequest) -> None:
+        if hasattr(self, "host_fixture"):
+            for (scenario, (fixture_name, fixture_value)) in self.host_fixture:
+                setattr(request.cls, fixture_name, fixture_value)
+
+
 class SocketDummyServerTestCase:
     """
     A simple socket-based server is created for this class that is good for
@@ -35,21 +46,10 @@ class SocketDummyServerTestCase:
     """
 
     scheme = "http"
-    # host = "localhost"
+    host = "localhost"
 
     server_thread: ClassVar[SocketServerThread]
     port: ClassVar[int]
-
-    host_fixture = [
-        ("test_localhost", ("host", "localhost")),
-        # ("test_uds", ("host", "/tmp/dummyserver.sock"))
-    ]
-
-    @pytest.fixture(autouse=True)
-    def auto_injector_fixture(self, request):
-        if hasattr(self, 'host_fixture'):
-            for (scenario, (fixture_name, fixture_value)) in self.host_fixture:
-                setattr(request.cls, fixture_name, fixture_value)
 
     @classmethod
     def _start_server(cls, socket_handler: Callable[[socket.socket], None]) -> None:
@@ -150,7 +150,7 @@ class HTTPDummyServerTestCase:
 
     io_loop: ClassVar[ioloop.IOLoop]
     server: ClassVar[httpserver.HTTPServer]
-    port: ClassVar[int]
+    port: ClassVar[Optional[int]]
     server_thread: ClassVar[threading.Thread]
 
     @classmethod
@@ -189,20 +189,20 @@ class HTTPDummyProxyTestCase:
     http_host = "localhost"
     http_host_alt = "127.0.0.1"
     http_server: ClassVar[httpserver.HTTPServer]
-    http_port: ClassVar[int]
+    http_port: ClassVar[Optional[int]]
 
     https_host = "localhost"
     https_host_alt = "127.0.0.1"
     https_certs = DEFAULT_CERTS
     https_server: ClassVar[httpserver.HTTPServer]
-    https_port: ClassVar[int]
+    https_port: ClassVar[Optional[int]]
 
     proxy_host = "localhost"
     proxy_host_alt = "127.0.0.1"
     proxy_server: ClassVar[httpserver.HTTPServer]
-    proxy_port: ClassVar[int]
+    proxy_port: ClassVar[Optional[int]]
     https_proxy_server: ClassVar[httpserver.HTTPServer]
-    https_proxy_port: ClassVar[int]
+    https_proxy_port: ClassVar[Optional[int]]
 
     server_thread: ClassVar[threading.Thread]
 

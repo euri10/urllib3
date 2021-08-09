@@ -107,7 +107,7 @@ class HTTPConnection(_HTTPConnection):
       Or you may want to disable the defaults by passing an empty list (e.g., ``[]``).
     """
 
-    default_port: int = port_by_scheme["http"]
+    default_port: Optional[int] = port_by_scheme["http"]
 
     #: Disable Nagle's algorithm by default.
     #: ``[(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)]``

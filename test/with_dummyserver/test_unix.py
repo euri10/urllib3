@@ -4,7 +4,7 @@ from dummyserver.testcase import HTTPDummyServerTestCase
 
 
 class UnixHTTPDummyServerTestCase(HTTPDummyServerTestCase):
-    host = '/tmp/dummyserver.sock'
+    host = "/tmp/dummyserver.sock"
 
     @classmethod
     def tearDownClass(cls):

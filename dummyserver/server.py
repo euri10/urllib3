@@ -14,7 +14,6 @@ import warnings
 from datetime import datetime
 from typing import Callable, Optional, Tuple, Union
 
-from tornado.netutil import bind_unix_socket
 import tornado.httpserver
 import tornado.ioloop
 import tornado.netutil
@@ -114,17 +113,36 @@ class SocketServerThread(threading.Thread):
 
         self.socket_handler = socket_handler
         self.host = host
+        self.use_uds = True if self.host[0] == "/" else False
         self.ready_event = ready_event
 
     def _start_server(self) -> None:
-        if self.USE_IPV6:
+        print("start server")
+        if self.use_uds:
+            sock = socket.socket(socket.AF_UNIX)
+        elif self.USE_IPV6:
             sock = socket.socket(socket.AF_INET6)
         else:
             warnings.warn("No IPv6 support. Falling back to IPv4.", NoIPv6Warning)
             sock = socket.socket(socket.AF_INET)
         if sys.platform != "win32":
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind((self.host, 0))
+        if not self.use_uds:
+            try:
+                sock.bind((self.host, 0))
+            except Exception as e:
+                print(e, self.host)
+            finally:
+                print("finally default")
+        else:
+            try:
+                sock.bind(self.host)
+            except Exception as e:
+                print(e, self.host)
+            finally:
+                print("finally uds")
+                if self.use_uds:
+                    os.remove(self.host)
         self.port = sock.getsockname()[1]
 
         # Once listen() returns, the server socket is ready
@@ -179,7 +197,7 @@ def run_tornado_app(  # type: ignore[no-untyped-def]
     certs,
     scheme: str,
     host: str,
-) -> Tuple[tornado.httpserver.HTTPServer, int]:
+) -> Tuple[tornado.httpserver.HTTPServer, Optional[int]]:
     assert io_loop == tornado.ioloop.IOLoop.current()
 
     # We can't use fromtimestamp(0) because of CPython issue 29097, so we'll
@@ -192,12 +210,13 @@ def run_tornado_app(  # type: ignore[no-untyped-def]
     else:
         http_server = tornado.httpserver.HTTPServer(app)
 
-    if host[:1] == '/':
-        sockets = [bind_unix_socket(host)]
+    if host[0] == "/":
+        sockets = [tornado.netutil.bind_unix_socket(host)]
         port = None
     else:
         sockets = tornado.netutil.bind_sockets(None, address=host)  # type: ignore[arg-type]
         port = sockets[0].getsockname()[1]
+
     http_server.add_sockets(sockets)
     return http_server, port
 
@@ -217,7 +236,7 @@ if __name__ == "__main__":
     # For debugging dummyserver itself - python -m dummyserver.server
     from .handlers import TestingApp
 
-    host = '127.0.0.1'
+    host = "127.0.0.1"
     # host = '/tmp/dummyserver.sock'
 
     io_loop = tornado.ioloop.IOLoop.current()
@@ -226,9 +245,9 @@ if __name__ == "__main__":
     server_thread = run_loop_in_thread(io_loop)
 
     if port:
-        print("Listening on http://{host}:{port}".format(host=host, port=port))
+        print(f"Listening on http://{host}:{port}")
     else:
-        print("Listening on http+unix@{host}".format(host=host))
+        print(f"Listening on http+unix@{host}")
 
 
 def encrypt_key_pem(private_key_pem: trustme.Blob, password: bytes) -> trustme.Blob:
